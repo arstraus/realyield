@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Base/ground line -->
+  <rect x="18" y="82" width="64" height="5" rx="1" fill="#10b981"/>
+  
+  <!-- Left shorter building section -->
+  <path d="M18 82V48H36V82H18Z" fill="#10b981"/>
+  
+  <!-- Right taller building section with pointed roof -->
+  <path d="M42 82V18L72 32V82H42Z" fill="#10b981"/>
+  
+  <!-- Growth arrow (white for dark backgrounds) -->
+  <path 
+    d="M57 38L47 48L52 48L52 72L62 72L62 48L67 48L57 38Z" 
+    fill="white"
+  />
+</svg>
