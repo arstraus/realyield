@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Building2, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 
 const AuthPage = () => {
     const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'forgot'
@@ -51,9 +51,11 @@ const AuthPage = () => {
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/20 rounded-2xl mb-4">
-                        <Building2 size={32} className="text-emerald-400" />
-                    </div>
+                    <img 
+                        src="/logo.png" 
+                        alt="RealYield" 
+                        className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-lg"
+                    />
                     <h1 className="text-3xl font-bold text-white">RealYield</h1>
                     <p className="text-slate-400 mt-2">Real Estate Investment Analyzer</p>
                 </div>

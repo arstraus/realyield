@@ -42,3 +42,5 @@ out/
 # Database files
 *.db
 *.sqlite
+.vercel
+.env*.local
