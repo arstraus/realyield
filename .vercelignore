@@ -1,0 +1,25 @@
+# Electron build outputs
+release/
+out/
+*.dmg
+*.app
+*.exe
+*.AppImage
+
+# Dependencies (Vercel installs these)
+node_modules/
+
+# Local database
+*.db
+*.sqlite
+
+# Electron-specific
+electron/
+
+# Build outputs (Vercel builds fresh)
+dist/
+
+# Development files
+.env.local
+.env
+
