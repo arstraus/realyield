@@ -18,22 +18,31 @@ import ConfirmModal from './components/ConfirmModal';
 
 
 function AppContent() {
+  // Auth hook - must be first
   const { isAuthenticated, loading, user, signOut, environment } = useAuth();
+  
+  // All state hooks - must be called unconditionally (React rules of hooks)
   const [property, setProperty] = useState(DEFAULT_PROPERTY);
   const [financing, setFinancing] = useState(DEFAULT_FINANCING);
   const [operations, setOperations] = useState(DEFAULT_OPERATIONS);
   const [taxMarket, setTaxMarket] = useState(DEFAULT_TAX_MARKET);
   const [closingCosts, setClosingCosts] = useState(DEFAULT_CLOSING_COSTS);
-  const [activeTab, setActiveTab] = useState('inputs'); // 'inputs', 'analysis', 'compare', 'proforma', 'sensitivity', 'memo'
+  const [activeTab, setActiveTab] = useState('inputs');
   const [currentScenarioPath, setCurrentScenarioPath] = useState(null);
-  const [currentDbId, setCurrentDbId] = useState(null); // SQLite database ID
+  const [currentDbId, setCurrentDbId] = useState(null);
   const [scenarioName, setScenarioName] = useState('Untitled Analysis');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingNameValue, setEditingNameValue] = useState('');
   const [comparisonScenarios, setComparisonScenarios] = useState([]);
   const [showScenarioManager, setShowScenarioManager] = useState(false);
+  const [showNewAnalysisModal, setShowNewAnalysisModal] = useState(false);
 
-  // Auth loading state
+  // useMemo must be called unconditionally (before any returns)
+  const results = useMemo(() => {
+    return generateForecast(property, financing, operations, taxMarket, closingCosts);
+  }, [property, financing, operations, taxMarket, closingCosts]);
+
+  // NOW we can have conditional returns (after all hooks)
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -42,15 +51,9 @@ function AppContent() {
     );
   }
 
-  // Show auth page if not authenticated (web mode only)
   if (!isAuthenticated) {
     return <AuthPage />;
   }
-
-  // Calculate results whenever inputs change
-  const results = useMemo(() => {
-    return generateForecast(property, financing, operations, taxMarket, closingCosts);
-  }, [property, financing, operations, taxMarket, closingCosts]);
 
   // Scenario name editing handlers
   const startEditingName = () => {
@@ -126,8 +129,6 @@ function AppContent() {
       setActiveTab('analysis');
     }
   };
-
-  const [showNewAnalysisModal, setShowNewAnalysisModal] = useState(false);
 
   const handleNewAnalysis = () => {
     setShowNewAnalysisModal(true);
