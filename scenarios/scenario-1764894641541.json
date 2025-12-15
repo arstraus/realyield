@@ -1,0 +1,67 @@
+{
+  "id": "1764894641541",
+  "name": "Scn1",
+  "createdAt": "2025-12-05T00:30:41.541Z",
+  "data": {
+    "property": {
+      "purchasePrice": 7000000,
+      "rehabCosts": 0,
+      "afterRepairValue": 7000000,
+      "landValuePercent": 20,
+      "buildingSize": 40000
+    },
+    "financing": {
+      "downPaymentPercent": 25,
+      "interestRate": 6.5,
+      "loanTermYears": 25
+    },
+    "operations": {
+      "inputMode": "commercial",
+      "grossRentMonthly": 4000,
+      "otherIncomeMonthly": 0,
+      "operatingExpensesMonthly": 0,
+      "annualBaseRentPerSqFt": 18,
+      "annualRentGrowth": 3,
+      "vacancyRate": 3,
+      "otherIncomePercent": 0,
+      "propertyTaxRate": 1.1,
+      "commercialExpenses": {
+        "propertyTaxPerSqFt": 1.5,
+        "insurancePerSqFt": 0.75,
+        "camPerSqFt": 1.25,
+        "managementPercent": 4,
+        "leasingCommissionsPercent": 0,
+        "repairsMaintenanceAnnual": 2500
+      },
+      "expenseRatio": 35,
+      "annualExpenseGrowth": 2,
+      "insuranceAnnual": 1200,
+      "managementFeeRate": 8,
+      "maintenanceRate": 5,
+      "capexRate": 5,
+      "initialCapEx": 25000,
+      "annualCapExReservePerSqFt": 0.15,
+      "insurance": 0.3,
+      "propertyManagementPercent": 3,
+      "maintenanceReservePercent": 1.5,
+      "utilities": 0.2,
+      "otherExpenses": 0.3
+    },
+    "taxMarket": {
+      "incomeTaxRate": 37,
+      "capitalGainsTaxRate": 20,
+      "depreciationYears": 39,
+      "sellingCosts": 3,
+      "discountRate": 7.5,
+      "exitCapRate": 5,
+      "holdPeriod": 10
+    },
+    "closingCosts": {
+      "titleInsurancePercent": 0.5,
+      "escrowFeesPercent": 1,
+      "lenderFeesPercent": 1,
+      "recordingFeesPercent": 0.5,
+      "inspectionAppraisalFixed": 2000
+    }
+  }
+}

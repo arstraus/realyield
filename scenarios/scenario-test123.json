@@ -1,0 +1,10 @@
+{
+  "id": "test123",
+  "name": "Test Scenario",
+  "createdAt": "2025-12-04T00:00:00Z",
+  "data": {
+    "property": {
+      "purchasePrice": 1000000
+    }
+  }
+}
