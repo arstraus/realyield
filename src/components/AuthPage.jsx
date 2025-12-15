@@ -51,12 +51,14 @@ const AuthPage = () => {
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <img 
-                        src="/logo.png" 
-                        alt="RealYield" 
-                        className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-lg"
-                    />
-                    <h1 className="text-3xl font-bold text-white">RealYield</h1>
+                    <div className="w-24 h-24 mx-auto mb-4 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl flex items-center justify-center ring-1 ring-white/20">
+                        <img 
+                            src="/logo.png" 
+                            alt="RealYield" 
+                            className="w-16 h-16 object-contain"
+                        />
+                    </div>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">RealYield</h1>
                     <p className="text-slate-400 mt-2">Real Estate Investment Analyzer</p>
                 </div>
 
