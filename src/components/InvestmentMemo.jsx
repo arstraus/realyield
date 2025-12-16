@@ -169,11 +169,11 @@ const InvestmentMemo = ({ property, financing, operations, taxMarket, closingCos
                             <p>Generated on</p>
                             <p className="font-medium text-gray-700">
                                 {new Date().toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </p>
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        })}
+                    </p>
                         </div>
                     </div>
                 </div>

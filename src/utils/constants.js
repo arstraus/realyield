@@ -1,8 +1,4 @@
 export const DEFAULT_PROPERTY = {
-    name: '',
-    address: '',
-    city: '',
-    state: '',
     purchasePrice: 2000000,
     rehabCosts: 0,
     afterRepairValue: 2000000,

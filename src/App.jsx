@@ -105,8 +105,8 @@ function AppContent() {
       if (currentScenarioPath && dataService.getEnvironment() === 'electron') {
         await dataService.saveToPath(currentScenarioPath, data);
         console.log("Saved to file:", currentScenarioPath);
-        return;
-      }
+      return;
+    }
 
       // 3. Otherwise, open the scenario manager to save to database
       setShowScenarioManager(true);
@@ -180,16 +180,16 @@ function AppContent() {
   const handleExport = async () => {
     const data = { scenarioName, property, financing, operations, taxMarket, closingCosts };
     const filePath = await dataService.exportToFile(data, scenarioName);
-    if (filePath) {
-      setCurrentScenarioPath(filePath);
+      if (filePath) {
+        setCurrentScenarioPath(filePath);
     }
   };
 
   const handleImport = async () => {
     const result = await dataService.importFromFile();
-    if (result) {
-      const scenarioData = result.data || result;
-      const filePath = result.filePath || null;
+      if (result) {
+        const scenarioData = result.data || result;
+        const filePath = result.filePath || null;
 
       if (scenarioData.property) setProperty({ ...DEFAULT_PROPERTY, ...scenarioData.property });
       if (scenarioData.financing) setFinancing({ ...DEFAULT_FINANCING, ...scenarioData.financing });
@@ -203,10 +203,10 @@ function AppContent() {
       });
       if (scenarioData.taxMarket) setTaxMarket({ ...DEFAULT_TAX_MARKET, ...scenarioData.taxMarket });
       if (scenarioData.closingCosts) setClosingCosts({ ...DEFAULT_CLOSING_COSTS, ...scenarioData.closingCosts });
-      
+
       setScenarioName(scenarioData.scenarioName || 'Untitled Analysis');
-      setActiveTab('analysis');
-      setCurrentScenarioPath(filePath);
+        setActiveTab('analysis');
+        setCurrentScenarioPath(filePath);
       setCurrentDbId(null); // Clear DB ID when importing from file
     }
   };

@@ -29,22 +29,22 @@ const ConfirmModal = ({
                     )}
                     <div className="flex-1">
                         <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-                        <p className="text-gray-600 mb-6">
-                            {message}
-                        </p>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={onClose}
+                <p className="text-gray-600 mb-6">
+                    {message}
+                </p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
                                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors"
-                            >
-                                {cancelText}
-                            </button>
-                            <button
-                                onClick={onConfirm}
+                    >
+                        {cancelText}
+                    </button>
+                    <button
+                        onClick={onConfirm}
                                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${buttonStyles[confirmVariant]}`}
-                            >
-                                {confirmText}
-                            </button>
+                    >
+                        {confirmText}
+                    </button>
                         </div>
                     </div>
                 </div>
