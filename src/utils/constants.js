@@ -65,9 +65,16 @@ export const DEFAULT_OPERATIONS = {
 export const DEFAULT_TAX_MARKET = {
     incomeTaxRate: 37,
     capitalGainsTaxRate: 20,
+    depreciationRecaptureRate: 25, // Section 1250 recapture rate
     depreciationYears: 39, // Commercial standard
     sellingCosts: 3,
     discountRate: 10,
     exitCapRate: 6.5,
     holdPeriod: 10,
+    // 1031 Exchange options
+    use1031Exchange: false,
+    exchangeBootPercent: 0, // Percent of gain taken as cash (taxable)
+    // Cost Segregation
+    useCostSegregation: false,
+    costSegYear1Bonus: 0, // Additional Year 1 depreciation from cost seg study
 };

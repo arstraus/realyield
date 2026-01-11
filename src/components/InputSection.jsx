@@ -1,6 +1,6 @@
-import React from 'react';
-import { DollarSign, Percent, Calendar } from 'lucide-react';
+import React, { useMemo } from 'react';
 import { PROPERTY_TEMPLATES } from '../utils/templates';
+import { validateProperty, validateFinancing, validateOperations, validateTaxMarket, validateClosingCosts } from '../utils/validation';
 
 const InputGroup = ({ title, children }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
@@ -9,6 +9,26 @@ const InputGroup = ({ title, children }) => (
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {children}
+        </div>
+    </div>
+);
+
+const ToggleSwitch = ({ label, checked, onChange, description }) => (
+    <div className="flex items-start space-x-3 py-2">
+        <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${checked ? 'bg-emerald-600' : 'bg-gray-200'}`}
+            role="switch"
+            aria-checked={checked}
+        >
+            <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+        </button>
+        <div className="flex-1">
+            <span className="text-sm font-medium text-gray-700">{label}</span>
+            {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
         </div>
     </div>
 );
@@ -59,6 +79,24 @@ const InputField = ({ label, value, onChange, prefix, suffix, type = "number", s
 const InputSection = ({ property, setProperty, financing, setFinancing, operations, setOperations, taxMarket, setTaxMarket, closingCosts, setClosingCosts }) => {
     const isCommercial = operations.inputMode === 'commercial';
     const [showClosingCostsDetail, setShowClosingCostsDetail] = React.useState(false);
+
+    // Compute validation errors
+    const errors = useMemo(() => ({
+        property: validateProperty(property),
+        financing: validateFinancing(financing),
+        operations: validateOperations(operations),
+        taxMarket: validateTaxMarket(taxMarket),
+        closingCosts: validateClosingCosts(closingCosts),
+    }), [property, financing, operations, taxMarket, closingCosts]);
+
+    // Helper to get first error message for a field
+    const getError = (section, field) => {
+        const sectionErrors = errors[section];
+        if (sectionErrors && sectionErrors[field] && sectionErrors[field].length > 0) {
+            return sectionErrors[field][0];
+        }
+        return null;
+    };
 
     const applyTemplate = (templateKey) => {
         const template = PROPERTY_TEMPLATES[templateKey];
@@ -139,12 +177,14 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                     value={property.purchasePrice}
                     onChange={(v) => setProperty({ ...property, purchasePrice: v })}
                     prefix="$"
+                    error={getError('property', 'purchasePrice')}
                 />
                 <InputField
                     label="Building Size"
                     value={property.buildingSize || 0}
                     onChange={(v) => setProperty({ ...property, buildingSize: v })}
                     suffix="SF"
+                    error={getError('property', 'buildingSize')}
                 />
                 <div className="text-sm text-gray-500 px-1">
                     Price per SF: {property.buildingSize ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(property.purchasePrice / property.buildingSize) : '$0'}
@@ -154,12 +194,14 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                     value={property.rehabCosts}
                     onChange={(v) => setProperty({ ...property, rehabCosts: v })}
                     prefix="$"
+                    error={getError('property', 'rehabCosts')}
                 />
                 <InputField
                     label="After Repair Value"
                     value={property.afterRepairValue}
                     onChange={(v) => setProperty({ ...property, afterRepairValue: v })}
                     prefix="$"
+                    error={getError('property', 'afterRepairValue')}
                 />
             </InputGroup>
 
@@ -188,30 +230,35 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                             value={closingCosts.titleInsurancePercent}
                             onChange={(v) => setClosingCosts({ ...closingCosts, titleInsurancePercent: v })}
                             suffix="%"
+                            error={getError('closingCosts', 'titleInsurancePercent')}
                         />
                         <InputField
                             label="Escrow Fees"
                             value={closingCosts.escrowFeesPercent}
                             onChange={(v) => setClosingCosts({ ...closingCosts, escrowFeesPercent: v })}
                             suffix="%"
+                            error={getError('closingCosts', 'escrowFeesPercent')}
                         />
                         <InputField
                             label="Lender Fees"
                             value={closingCosts.lenderFeesPercent}
                             onChange={(v) => setClosingCosts({ ...closingCosts, lenderFeesPercent: v })}
                             suffix="%"
+                            error={getError('closingCosts', 'lenderFeesPercent')}
                         />
                         <InputField
                             label="Recording Fees"
                             value={closingCosts.recordingFeesPercent}
                             onChange={(v) => setClosingCosts({ ...closingCosts, recordingFeesPercent: v })}
                             suffix="%"
+                            error={getError('closingCosts', 'recordingFeesPercent')}
                         />
                         <InputField
                             label="Inspection & Appraisal"
                             value={closingCosts.inspectionAppraisalFixed}
                             onChange={(v) => setClosingCosts({ ...closingCosts, inspectionAppraisalFixed: v })}
                             prefix="$"
+                            error={getError('closingCosts', 'inspectionAppraisalFixed')}
                         />
                     </div>
                 )}
@@ -223,18 +270,21 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                     value={financing.downPaymentPercent}
                     onChange={(v) => setFinancing({ ...financing, downPaymentPercent: v })}
                     suffix="%"
+                    error={getError('financing', 'downPaymentPercent')}
                 />
                 <InputField
                     label="Interest Rate"
                     value={financing.interestRate}
                     onChange={(v) => setFinancing({ ...financing, interestRate: v })}
                     suffix="%"
+                    error={getError('financing', 'interestRate')}
                 />
                 <InputField
                     label="Loan Term"
                     value={financing.loanTermYears}
                     onChange={(v) => setFinancing({ ...financing, loanTermYears: v })}
                     suffix="Years"
+                    error={getError('financing', 'loanTermYears')}
                 />
             </InputGroup>
 
@@ -266,18 +316,22 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                                 onChange={(v) => setOperations({ ...operations, annualBaseRentPerSqFt: v })}
                                 prefix="$"
                                 suffix="/ SF"
+                                error={getError('operations', 'annualBaseRentPerSqFt')}
                             />
                             <InputField
                                 label="Vacancy Rate"
                                 value={operations.vacancyRate}
                                 onChange={(v) => setOperations({ ...operations, vacancyRate: v })}
                                 suffix="%"
+                                error={getError('operations', 'vacancyRate')}
                             />
                             <InputField
                                 label="Annual Rent Growth"
                                 value={operations.annualRentGrowth}
                                 onChange={(v) => setOperations({ ...operations, annualRentGrowth: v })}
                                 suffix="%"
+                                allowNegative
+                                error={getError('operations', 'annualRentGrowth')}
                             />
                             <InputField
                                 label="Other Income"
@@ -293,18 +347,22 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                                 value={operations.grossRentMonthly}
                                 onChange={(v) => setOperations({ ...operations, grossRentMonthly: v })}
                                 prefix="$"
+                                error={getError('operations', 'grossRentMonthly')}
                             />
                             <InputField
                                 label="Vacancy Rate"
                                 value={operations.vacancyRate}
                                 onChange={(v) => setOperations({ ...operations, vacancyRate: v })}
                                 suffix="%"
+                                error={getError('operations', 'vacancyRate')}
                             />
                             <InputField
                                 label="Annual Rent Growth"
                                 value={operations.annualRentGrowth}
                                 onChange={(v) => setOperations({ ...operations, annualRentGrowth: v })}
                                 suffix="%"
+                                allowNegative
+                                error={getError('operations', 'annualRentGrowth')}
                             />
                             <InputField
                                 label="Other Income (Monthly)"
@@ -373,6 +431,8 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                             value={operations.annualExpenseGrowth}
                             onChange={(v) => setOperations({ ...operations, annualExpenseGrowth: v })}
                             suffix="%"
+                            allowNegative
+                            error={getError('operations', 'annualExpenseGrowth')}
                         />
                     </>
                 ) : (
@@ -394,18 +454,22 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                             value={operations.managementFeeRate}
                             onChange={(v) => setOperations({ ...operations, managementFeeRate: v })}
                             suffix="% of Rent"
+                            error={getError('operations', 'managementFeeRate')}
                         />
                         <InputField
                             label="Maintenance"
                             value={operations.maintenanceRate}
                             onChange={(v) => setOperations({ ...operations, maintenanceRate: v })}
                             suffix="% of Rent"
+                            error={getError('operations', 'maintenanceRate')}
                         />
                         <InputField
                             label="Annual Expense Growth"
                             value={operations.annualExpenseGrowth}
                             onChange={(v) => setOperations({ ...operations, annualExpenseGrowth: v })}
                             suffix="%"
+                            allowNegative
+                            error={getError('operations', 'annualExpenseGrowth')}
                         />
                     </>
                 )}
@@ -433,48 +497,117 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                     value={taxMarket.incomeTaxRate}
                     onChange={(v) => setTaxMarket({ ...taxMarket, incomeTaxRate: v })}
                     suffix="%"
+                    error={getError('taxMarket', 'incomeTaxRate')}
                 />
                 <InputField
                     label="Capital Gains Tax Rate"
                     value={taxMarket.capitalGainsTaxRate}
                     onChange={(v) => setTaxMarket({ ...taxMarket, capitalGainsTaxRate: v })}
                     suffix="%"
+                    error={getError('taxMarket', 'capitalGainsTaxRate')}
                 />
                 <InputField
                     label="Selling Costs"
                     value={taxMarket.sellingCosts}
                     onChange={(v) => setTaxMarket({ ...taxMarket, sellingCosts: v })}
                     suffix="% of Sale"
+                    error={getError('taxMarket', 'sellingCosts')}
                 />
                 <InputField
                     label="Discount Rate (%)"
                     value={taxMarket.discountRate}
                     onChange={(val) => setTaxMarket({ ...taxMarket, discountRate: val })}
+                    error={getError('taxMarket', 'discountRate')}
                 />
                 <InputField
                     label="Hold Period (Years)"
                     value={taxMarket.holdPeriod || 10}
                     onChange={(val) => setTaxMarket({ ...taxMarket, holdPeriod: val })}
+                    error={getError('taxMarket', 'holdPeriod')}
                 />
                 <InputField
                     label="Exit Cap Rate"
                     value={taxMarket.exitCapRate || 0}
                     onChange={(v) => setTaxMarket({ ...taxMarket, exitCapRate: v })}
                     suffix="%"
+                    error={getError('taxMarket', 'exitCapRate')}
                 />
                 <InputField
                     label="Depreciation (Years)"
                     value={taxMarket.depreciationYears}
                     onChange={(v) => setTaxMarket({ ...taxMarket, depreciationYears: v })}
                     suffix="Years"
+                    error={getError('taxMarket', 'depreciationYears')}
                 />
                 <InputField
                     label="Land Value"
                     value={property.landValuePercent}
                     onChange={(v) => setProperty({ ...property, landValuePercent: v })}
                     suffix="% of Price"
+                    error={getError('property', 'landValuePercent')}
+                />
+                <InputField
+                    label="Depreciation Recapture Rate"
+                    value={taxMarket.depreciationRecaptureRate || 25}
+                    onChange={(v) => setTaxMarket({ ...taxMarket, depreciationRecaptureRate: v })}
+                    suffix="%"
                 />
             </InputGroup>
+
+            {/* Tax Strategy Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50">
+                    <h3 className="text-lg font-semibold text-gray-900">Tax Strategies</h3>
+                    <p className="text-sm text-gray-500 mt-1">Advanced tax planning options</p>
+                </div>
+                <div className="p-6 space-y-6">
+                    {/* 1031 Exchange */}
+                    <div className="border-b border-gray-100 pb-6">
+                        <ToggleSwitch
+                            label="1031 Exchange"
+                            checked={taxMarket.use1031Exchange || false}
+                            onChange={(v) => setTaxMarket({ ...taxMarket, use1031Exchange: v })}
+                            description="Defer capital gains tax by reinvesting in like-kind property"
+                        />
+                        {taxMarket.use1031Exchange && (
+                            <div className="mt-4 ml-14 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                                <InputField
+                                    label="Boot Percentage"
+                                    value={taxMarket.exchangeBootPercent || 0}
+                                    onChange={(v) => setTaxMarket({ ...taxMarket, exchangeBootPercent: v })}
+                                    suffix="%"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Portion of sale proceeds taken as cash (taxable). 0% = full deferral.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Cost Segregation */}
+                    <div>
+                        <ToggleSwitch
+                            label="Cost Segregation Study"
+                            checked={taxMarket.useCostSegregation || false}
+                            onChange={(v) => setTaxMarket({ ...taxMarket, useCostSegregation: v })}
+                            description="Accelerate depreciation by reclassifying building components"
+                        />
+                        {taxMarket.useCostSegregation && (
+                            <div className="mt-4 ml-14 p-4 bg-purple-50/50 rounded-lg border border-purple-100">
+                                <InputField
+                                    label="Year 1 Bonus Depreciation"
+                                    value={taxMarket.costSegYear1Bonus || 0}
+                                    onChange={(v) => setTaxMarket({ ...taxMarket, costSegYear1Bonus: v })}
+                                    prefix="$"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Additional first-year depreciation from accelerated schedules. Typical range: 15-30% of building value.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

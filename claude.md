@@ -5,8 +5,7 @@ Real estate investment analysis platform for evaluating rental property deals th
 ## Tech Stack
 
 - **Frontend**: React 19, Vite 7, Tailwind CSS
-- **Desktop**: Electron 39 with SQLite (better-sqlite3)
-- **Web Backend**: Supabase (PostgreSQL + Auth)
+- **Backend**: Supabase (PostgreSQL + Auth)
 - **Charts**: Recharts
 - **PDF Export**: jsPDF + html2canvas
 - **Icons**: Lucide React
@@ -22,11 +21,6 @@ src/
 ├── App.jsx           # Main orchestrator with state management
 └── main.jsx          # Entry point
 
-electron/
-├── main.cjs          # Electron main process + IPC handlers
-├── database.cjs      # SQLite database service
-└── preload.cjs       # Context bridge for renderer
-
 supabase/
 └── migrations/       # PostgreSQL schema + RLS policies
 ```
@@ -35,19 +29,15 @@ supabase/
 
 ```bash
 npm run dev           # Vite dev server (localhost:5173)
-npm run electron:dev  # Electron with hot reload
 npm run build         # Production build
-npm run electron:build # Build Electron .app/.dmg
 npm run lint          # ESLint check
 ```
 
 ## Architecture
 
-**Dual deployment model:**
-- **Desktop (Electron)**: Local SQLite database, file-based import/export
-- **Web (Vercel)**: Supabase PostgreSQL with Row-Level Security, email + Google OAuth
+**Web deployment on Vercel** with Supabase PostgreSQL backend, Row-Level Security, and email + Google OAuth.
 
-The `dataService.js` provides a unified API that detects environment and routes to appropriate backend (Electron IPC, Supabase, or localStorage fallback).
+The `dataService.js` provides a unified API that routes to Supabase or localStorage fallback.
 
 ## Key Files
 
@@ -74,7 +64,6 @@ Scenarios are stored as JSON with these sections:
 - PascalCase for components, camelCase for utilities
 - Context API for auth/theme (no Redux)
 - Pure functions in utils/ for calculations
-- IPC handlers return Promises (Electron)
 
 ## Environment Variables
 

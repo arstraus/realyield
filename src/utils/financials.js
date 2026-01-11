@@ -35,6 +35,18 @@ const calculateAnnualInterest = (principal, rate, monthlyPayment) => {
  * @returns {number} IRR as a percentage (e.g., 12.5)
  */
 export const calculateIRR = (cashFlows, guess = 0.1) => {
+    // Handle edge cases
+    if (!cashFlows || cashFlows.length < 2) return 0;
+
+    // Check if all cash flows are zero
+    const hasNonZero = cashFlows.some(cf => cf !== 0);
+    if (!hasNonZero) return 0;
+
+    // Check for valid investment pattern (negative initial, positive later or vice versa)
+    const hasNegative = cashFlows.some(cf => cf < 0);
+    const hasPositive = cashFlows.some(cf => cf > 0);
+    if (!hasNegative || !hasPositive) return 0;
+
     const maxIterations = 1000;
     const precision = 0.00001;
     let rate = guess;
@@ -45,6 +57,7 @@ export const calculateIRR = (cashFlows, guess = 0.1) => {
 
         for (let t = 0; t < cashFlows.length; t++) {
             const denominator = Math.pow(1 + rate, t);
+            if (denominator === 0 || !isFinite(denominator)) return 0;
             npv += cashFlows[t] / denominator;
             if (t > 0) {
                 derivative -= (t * cashFlows[t]) / (denominator * (1 + rate));
@@ -52,13 +65,17 @@ export const calculateIRR = (cashFlows, guess = 0.1) => {
         }
 
         if (Math.abs(npv) < precision) {
-            return rate * 100;
+            return isFinite(rate) ? rate * 100 : 0;
         }
 
-        if (derivative === 0) return 0;
+        if (derivative === 0 || !isFinite(derivative)) return 0;
         const newRate = rate - npv / derivative;
+
+        // Prevent divergence
+        if (!isFinite(newRate) || newRate < -0.99) return 0;
+
         if (Math.abs(newRate - rate) < precision) {
-            return newRate * 100;
+            return isFinite(newRate) ? newRate * 100 : 0;
         }
         rate = newRate;
     }
@@ -359,11 +376,37 @@ export const generateForecast = (property, financing, operations, taxMarket, clo
     const finalLoanBalance = forecast[years - 1].loanBalanceEnd;
     const netSaleProceedsBeforeTax = futureValue - sellingCosts - finalLoanBalance;
 
-    const accumulatedDepreciation = annualDepreciation * years;
+    // Cost Segregation: Additional Year 1 bonus depreciation
+    const costSegBonus = taxMarket.useCostSegregation ? (taxMarket.costSegYear1Bonus || 0) : 0;
+    const accumulatedDepreciation = (annualDepreciation * years) + costSegBonus;
     const adjustedBasis = property.purchasePrice + property.rehabCosts + closingCostsValue - accumulatedDepreciation;
     const capitalGain = (futureValue - sellingCosts) - adjustedBasis;
 
-    const taxOnSale = capitalGain * (taxMarket.capitalGainsTaxRate / 100);
+    // Calculate tax on sale with depreciation recapture
+    const depreciationRecaptureRate = taxMarket.depreciationRecaptureRate || 25;
+    const depreciationRecaptureTax = accumulatedDepreciation * (depreciationRecaptureRate / 100);
+    const remainingGain = Math.max(0, capitalGain - accumulatedDepreciation);
+    const capitalGainsTax = remainingGain * (taxMarket.capitalGainsTaxRate / 100);
+
+    // 1031 Exchange: Defer taxes if enabled
+    let taxOnSale = 0;
+    let exchangeInfo = null;
+    if (taxMarket.use1031Exchange) {
+        const bootPercent = taxMarket.exchangeBootPercent || 0;
+        const bootAmount = netSaleProceedsBeforeTax * (bootPercent / 100);
+        // Only pay taxes on the boot (cash taken out)
+        const bootTaxRate = (taxMarket.capitalGainsTaxRate + depreciationRecaptureRate) / 2; // Simplified blended rate
+        taxOnSale = bootAmount * (bootTaxRate / 100);
+        exchangeInfo = {
+            enabled: true,
+            bootPercent,
+            bootAmount,
+            deferredGain: capitalGain - bootAmount,
+            taxSaved: (depreciationRecaptureTax + capitalGainsTax) - taxOnSale,
+        };
+    } else {
+        taxOnSale = depreciationRecaptureTax + capitalGainsTax;
+    }
     const netCashFromSale = netSaleProceedsBeforeTax - taxOnSale;
 
     // --- Metrics Calculation ---
@@ -380,13 +423,21 @@ export const generateForecast = (property, financing, operations, taxMarket, clo
     const npvAfterTax = calculateNPV(taxMarket.discountRate / 100, cashFlowsAfterTax);
 
     const totalCashFlowPreTax = forecast.reduce((sum, f) => sum + f.cashFlow, 0);
-    const equityMultiple = (totalCashFlowPreTax + netSaleProceedsBeforeTax) / totalInitialInvestment;
+    const equityMultiple = totalInitialInvestment > 0
+        ? (totalCashFlowPreTax + netSaleProceedsBeforeTax) / totalInitialInvestment
+        : 0;
 
     const totalCashFlowAfterTax = forecast.reduce((sum, f) => sum + f.cashFlowAfterTax, 0);
-    const equityMultipleAfterTax = (totalCashFlowAfterTax + netCashFromSale) / totalInitialInvestment;
+    const equityMultipleAfterTax = totalInitialInvestment > 0
+        ? (totalCashFlowAfterTax + netCashFromSale) / totalInitialInvestment
+        : 0;
 
-    const averageCashOnCash = forecast.reduce((sum, f) => sum + f.cashOnCash, 0) / years;
-    const averageCashOnCashAfterTax = forecast.reduce((sum, f) => sum + f.cashOnCashAfterTax, 0) / years;
+    const averageCashOnCash = years > 0
+        ? forecast.reduce((sum, f) => sum + f.cashOnCash, 0) / years
+        : 0;
+    const averageCashOnCashAfterTax = years > 0
+        ? forecast.reduce((sum, f) => sum + f.cashOnCashAfterTax, 0) / years
+        : 0;
 
     // Generate amortization schedule
     const amortizationSchedule = generateAmortizationSchedule(loanAmount, financing.interestRate, financing.loanTermYears);
@@ -414,8 +465,8 @@ export const generateForecast = (property, financing, operations, taxMarket, clo
             netSaleProceeds: netSaleProceedsBeforeTax,
             netCashFromSale,
             totalProfit: (totalCashFlowAfterTax + netCashFromSale) - totalInitialInvestment,
-            capRate: (forecast[0].noi / property.purchasePrice) * 100,
-            dscr: forecast[0].noi / forecast[0].debtService,
+            capRate: property.purchasePrice > 0 ? (forecast[0].noi / property.purchasePrice) * 100 : 0,
+            dscr: forecast[0].debtService > 0 ? forecast[0].noi / forecast[0].debtService : Infinity,
             year1Noi: forecast[0].noi,
             year1CashOnCashAfterTax: forecast[0].cashOnCashAfterTax,
             exitAnalysis: {
@@ -424,8 +475,16 @@ export const generateForecast = (property, financing, operations, taxMarket, clo
                 loanBalanceAtExit: finalLoanBalance,
                 netSaleProceeds: netSaleProceedsBeforeTax,
                 totalTaxOnSale: taxOnSale,
-                netCashFromSale
-            }
+                depreciationRecapture: depreciationRecaptureTax,
+                capitalGainsTax,
+                netCashFromSale,
+                exchange1031: exchangeInfo,
+            },
+            costSegregation: taxMarket.useCostSegregation ? {
+                enabled: true,
+                year1Bonus: costSegBonus,
+                totalDepreciation: accumulatedDepreciation,
+            } : null
         }
     };
 };

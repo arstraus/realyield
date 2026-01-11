@@ -1,8 +1,7 @@
 /**
  * Unified Data Service
- * 
+ *
  * Provides a consistent API for data operations that works across:
- * - Electron (SQLite via IPC)
  * - Web (Supabase)
  * - Fallback (localStorage for demo/offline)
  */
@@ -10,15 +9,12 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 
 // Environment detection
-const isElectron = () => typeof window !== 'undefined' && window.electronAPI !== undefined;
-const isWeb = () => !isElectron() && isSupabaseConfigured();
-const isFallback = () => !isElectron() && !isSupabaseConfigured();
+const isWeb = () => isSupabaseConfigured();
 
 /**
  * Get current environment mode
  */
 export const getEnvironment = () => {
-    if (isElectron()) return 'electron';
     if (isWeb()) return 'web';
     return 'fallback';
 };
@@ -31,27 +27,22 @@ export const getEnvironment = () => {
  * Get all scenarios for the current user
  */
 export const getAllScenarios = async () => {
-    if (isElectron()) {
-        return window.electronAPI.getAllScenarios();
-    }
-    
     if (isWeb()) {
         const { data, error } = await supabase
             .from('scenarios')
             .select('*')
             .order('updated_at', { ascending: false });
-        
+
         if (error) throw error;
-        
-        // Transform to match Electron format
-        return data.map(row => ({
+
+        return data.map((row) => ({
             ...row,
             data: row.data,
             tags: row.tags || [],
-            is_favorite: row.is_favorite
+            is_favorite: row.is_favorite,
         }));
     }
-    
+
     // Fallback: localStorage
     const stored = localStorage.getItem('realyield_scenarios');
     return stored ? JSON.parse(stored) : [];
@@ -61,37 +52,31 @@ export const getAllScenarios = async () => {
  * Get a single scenario by ID
  */
 export const getScenario = async (id) => {
-    if (isElectron()) {
-        return window.electronAPI.getScenario(id);
-    }
-    
     if (isWeb()) {
         const { data, error } = await supabase
             .from('scenarios')
             .select('*')
             .eq('id', id)
             .single();
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
-    return scenarios.find(s => s.id === id) || null;
+    return scenarios.find((s) => s.id === id) || null;
 };
 
 /**
  * Create a new scenario
  */
 export const createScenario = async (scenario) => {
-    if (isElectron()) {
-        return window.electronAPI.createScenario(scenario);
-    }
-    
     if (isWeb()) {
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
         const { data, error } = await supabase
             .from('scenarios')
             .insert({
@@ -103,22 +88,22 @@ export const createScenario = async (scenario) => {
                 property_state: scenario.property?.state || null,
                 data: scenario.data,
                 tags: scenario.tags || [],
-                is_favorite: scenario.is_favorite || false
+                is_favorite: scenario.is_favorite || false,
             })
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback: localStorage
     const scenarios = await getAllScenarios();
     const newScenario = {
         ...scenario,
         id: Date.now().toString(),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
     };
     scenarios.unshift(newScenario);
     localStorage.setItem('realyield_scenarios', JSON.stringify(scenarios));
@@ -129,10 +114,6 @@ export const createScenario = async (scenario) => {
  * Update an existing scenario
  */
 export const updateScenario = async (id, scenario) => {
-    if (isElectron()) {
-        return window.electronAPI.updateScenario(id, scenario);
-    }
-    
     if (isWeb()) {
         const { data, error } = await supabase
             .from('scenarios')
@@ -145,24 +126,24 @@ export const updateScenario = async (id, scenario) => {
                 data: scenario.data,
                 tags: scenario.tags || [],
                 is_favorite: scenario.is_favorite || false,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
             })
             .eq('id', id)
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
-    const index = scenarios.findIndex(s => s.id === id);
+    const index = scenarios.findIndex((s) => s.id === id);
     if (index !== -1) {
-        scenarios[index] = { 
-            ...scenarios[index], 
-            ...scenario, 
-            updated_at: new Date().toISOString() 
+        scenarios[index] = {
+            ...scenarios[index],
+            ...scenario,
+            updated_at: new Date().toISOString(),
         };
         localStorage.setItem('realyield_scenarios', JSON.stringify(scenarios));
         return scenarios[index];
@@ -174,23 +155,16 @@ export const updateScenario = async (id, scenario) => {
  * Delete a scenario
  */
 export const deleteScenario = async (id) => {
-    if (isElectron()) {
-        return window.electronAPI.deleteScenario(id);
-    }
-    
     if (isWeb()) {
-        const { error } = await supabase
-            .from('scenarios')
-            .delete()
-            .eq('id', id);
-        
+        const { error } = await supabase.from('scenarios').delete().eq('id', id);
+
         if (error) throw error;
         return { success: true };
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
-    const filtered = scenarios.filter(s => s.id !== id);
+    const filtered = scenarios.filter((s) => s.id !== id);
     localStorage.setItem('realyield_scenarios', JSON.stringify(filtered));
     return { success: true };
 };
@@ -199,31 +173,27 @@ export const deleteScenario = async (id) => {
  * Toggle favorite status
  */
 export const toggleFavorite = async (id) => {
-    if (isElectron()) {
-        return window.electronAPI.toggleFavorite(id);
-    }
-    
     if (isWeb()) {
         // First get current state
         const scenario = await getScenario(id);
-        
+
         const { data, error } = await supabase
             .from('scenarios')
-            .update({ 
+            .update({
                 is_favorite: !scenario.is_favorite,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
             })
             .eq('id', id)
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
-    const scenario = scenarios.find(s => s.id === id);
+    const scenario = scenarios.find((s) => s.id === id);
     if (scenario) {
         scenario.is_favorite = !scenario.is_favorite;
         localStorage.setItem('realyield_scenarios', JSON.stringify(scenarios));
@@ -236,28 +206,27 @@ export const toggleFavorite = async (id) => {
  * Search scenarios by name or address
  */
 export const searchScenarios = async (query) => {
-    if (isElectron()) {
-        return window.electronAPI.searchScenarios(query);
-    }
-    
     if (isWeb()) {
         const { data, error } = await supabase
             .from('scenarios')
             .select('*')
-            .or(`name.ilike.%${query}%,property_address.ilike.%${query}%,property_city.ilike.%${query}%`)
+            .or(
+                `name.ilike.%${query}%,property_address.ilike.%${query}%,property_city.ilike.%${query}%`
+            )
             .order('updated_at', { ascending: false });
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
     const lowerQuery = query.toLowerCase();
-    return scenarios.filter(s => 
-        s.name?.toLowerCase().includes(lowerQuery) ||
-        s.property_address?.toLowerCase().includes(lowerQuery) ||
-        s.property_city?.toLowerCase().includes(lowerQuery)
+    return scenarios.filter(
+        (s) =>
+            s.name?.toLowerCase().includes(lowerQuery) ||
+            s.property_address?.toLowerCase().includes(lowerQuery) ||
+            s.property_city?.toLowerCase().includes(lowerQuery)
     );
 };
 
@@ -265,45 +234,37 @@ export const searchScenarios = async (query) => {
  * Get favorite scenarios
  */
 export const getFavoriteScenarios = async () => {
-    if (isElectron()) {
-        return window.electronAPI.getFavoriteScenarios();
-    }
-    
     if (isWeb()) {
         const { data, error } = await supabase
             .from('scenarios')
             .select('*')
             .eq('is_favorite', true)
             .order('updated_at', { ascending: false });
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
-    return scenarios.filter(s => s.is_favorite);
+    return scenarios.filter((s) => s.is_favorite);
 };
 
 /**
  * Get recent scenarios
  */
 export const getRecentScenarios = async (limit = 10) => {
-    if (isElectron()) {
-        return window.electronAPI.getRecentScenarios(limit);
-    }
-    
     if (isWeb()) {
         const { data, error } = await supabase
             .from('scenarios')
             .select('*')
             .order('updated_at', { ascending: false })
             .limit(limit);
-        
+
         if (error) throw error;
         return data;
     }
-    
+
     // Fallback
     const scenarios = await getAllScenarios();
     return scenarios.slice(0, limit);
@@ -313,45 +274,38 @@ export const getRecentScenarios = async (limit = 10) => {
  * Duplicate a scenario
  */
 export const duplicateScenario = async (id) => {
-    if (isElectron()) {
-        return window.electronAPI.duplicateScenario(id);
-    }
-    
     const original = await getScenario(id);
     if (!original) throw new Error('Scenario not found');
-    
+
     return createScenario({
         name: `${original.name} (Copy)`,
         description: original.description,
         property: {
             address: original.property_address,
             city: original.property_city,
-            state: original.property_state
+            state: original.property_state,
         },
         data: original.data,
         tags: original.tags,
-        is_favorite: false
+        is_favorite: false,
     });
 };
 
 // ==========================================
-// FILE OPERATIONS (Electron only, Web uses download/upload)
+// FILE OPERATIONS
 // ==========================================
 
 /**
- * Export scenario to file
+ * Export scenario to file (browser download)
  */
 export const exportToFile = async (content, suggestedName) => {
-    if (isElectron()) {
-        return window.electronAPI.saveScenarioToDisk(content, suggestedName);
-    }
-    
-    // Web: trigger browser download
-    const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(content, null, 2)], {
+        type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = suggestedName 
+    a.download = suggestedName
         ? `${suggestedName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`
         : 'scenario.json';
     document.body.appendChild(a);
@@ -362,14 +316,9 @@ export const exportToFile = async (content, suggestedName) => {
 };
 
 /**
- * Import scenario from file
+ * Import scenario from file (browser file input)
  */
 export const importFromFile = async () => {
-    if (isElectron()) {
-        return window.electronAPI.loadScenarioFromDisk();
-    }
-    
-    // Web: use file input
     return new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -380,7 +329,7 @@ export const importFromFile = async () => {
                 resolve(null);
                 return;
             }
-            
+
             try {
                 const text = await file.text();
                 const data = JSON.parse(text);
@@ -393,17 +342,3 @@ export const importFromFile = async () => {
         input.click();
     });
 };
-
-/**
- * Save to specific file path (Electron only)
- */
-export const saveToPath = async (filePath, content) => {
-    if (isElectron()) {
-        return window.electronAPI.saveScenarioToPath(filePath, content);
-    }
-    // Web: not supported, use exportToFile instead
-    return exportToFile(content, 'scenario');
-};
-
-
-

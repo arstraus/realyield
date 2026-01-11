@@ -5,10 +5,10 @@ import DealScoreBadge from './DealScoreBadge';
 import { calculateDealScore } from '../utils/scoring';
 
 const MetricCard = ({ title, value, subtext, highlight = false }) => (
-    <div className={`bg-white rounded-xl shadow-sm border p-6 ${highlight ? 'border-emerald-100 bg-emerald-50/30' : 'border-gray-100'}`}>
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className={`mt-2 text-3xl font-bold ${highlight ? 'text-emerald-600' : 'text-gray-900'}`}>{value}</p>
-        {subtext && <p className="mt-1 text-sm text-gray-500">{subtext}</p>}
+    <div className={`bg-white rounded-xl shadow-sm border p-4 sm:p-6 ${highlight ? 'border-emerald-100 bg-emerald-50/30' : 'border-gray-100'}`}>
+        <p className="text-xs sm:text-sm font-medium text-gray-500 truncate">{title}</p>
+        <p className={`mt-1 sm:mt-2 text-xl sm:text-3xl font-bold ${highlight ? 'text-emerald-600' : 'text-gray-900'}`}>{value}</p>
+        {subtext && <p className="mt-1 text-xs sm:text-sm text-gray-500 hidden sm:block">{subtext}</p>}
     </div>
 );
 
@@ -30,7 +30,7 @@ const Dashboard = ({ metrics, forecast, amortizationSchedule, loanAmount }) => {
     return (
         <div className="space-y-8">
             {/* Deal Score + Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
                 <DealScoreBadge
                     grade={dealScore.grade}
                     score={dealScore.score}
@@ -156,6 +156,87 @@ const Dashboard = ({ metrics, forecast, amortizationSchedule, loanAmount }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Tax Strategy Results - 1031 Exchange */}
+            {metrics.exitAnalysis?.exchange1031?.enabled && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-sm border border-indigo-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-indigo-100 bg-indigo-100/30">
+                            <h3 className="text-lg font-semibold text-indigo-900">1031 Exchange Analysis</h3>
+                        </div>
+                        <div className="p-4">
+                            <table className="w-full">
+                                <tbody className="divide-y divide-indigo-100">
+                                    <tr className="py-2">
+                                        <td className="py-2 text-sm font-medium text-gray-700">Boot Percentage</td>
+                                        <td className="py-2 text-sm text-gray-900 text-right">{formatPercent(metrics.exitAnalysis.exchange1031.bootPercent)}</td>
+                                    </tr>
+                                    <tr className="py-2">
+                                        <td className="py-2 text-sm font-medium text-gray-700">Boot Amount (Taxable)</td>
+                                        <td className="py-2 text-sm text-gray-900 text-right">{formatCurrency(metrics.exitAnalysis.exchange1031.bootAmount)}</td>
+                                    </tr>
+                                    <tr className="py-2">
+                                        <td className="py-2 text-sm font-medium text-gray-700">Deferred Gain</td>
+                                        <td className="py-2 text-sm text-gray-900 text-right">{formatCurrency(metrics.exitAnalysis.exchange1031.deferredGain)}</td>
+                                    </tr>
+                                    <tr className="py-2">
+                                        <td className="py-2 text-sm font-medium text-indigo-700">Tax Savings</td>
+                                        <td className="py-2 text-sm font-bold text-indigo-600 text-right">{formatCurrency(metrics.exitAnalysis.exchange1031.taxSaved)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Cost Segregation Results */}
+                    {metrics.costSegregation?.enabled && (
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-sm border border-purple-100 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-purple-100 bg-purple-100/30">
+                                <h3 className="text-lg font-semibold text-purple-900">Cost Segregation Benefits</h3>
+                            </div>
+                            <div className="p-4">
+                                <table className="w-full">
+                                    <tbody className="divide-y divide-purple-100">
+                                        <tr className="py-2">
+                                            <td className="py-2 text-sm font-medium text-gray-700">Year 1 Bonus Depreciation</td>
+                                            <td className="py-2 text-sm text-gray-900 text-right">{formatCurrency(metrics.costSegregation.year1Bonus)}</td>
+                                        </tr>
+                                        <tr className="py-2">
+                                            <td className="py-2 text-sm font-medium text-gray-700">Total Depreciation</td>
+                                            <td className="py-2 text-sm text-gray-900 text-right">{formatCurrency(metrics.costSegregation.totalDepreciation)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Cost Segregation standalone (when 1031 not enabled) */}
+            {!metrics.exitAnalysis?.exchange1031?.enabled && metrics.costSegregation?.enabled && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-sm border border-purple-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-purple-100 bg-purple-100/30">
+                            <h3 className="text-lg font-semibold text-purple-900">Cost Segregation Benefits</h3>
+                        </div>
+                        <div className="p-4">
+                            <table className="w-full">
+                                <tbody className="divide-y divide-purple-100">
+                                    <tr className="py-2">
+                                        <td className="py-2 text-sm font-medium text-gray-700">Year 1 Bonus Depreciation</td>
+                                        <td className="py-2 text-sm text-gray-900 text-right">{formatCurrency(metrics.costSegregation.year1Bonus)}</td>
+                                    </tr>
+                                    <tr className="py-2">
+                                        <td className="py-2 text-sm font-medium text-gray-700">Total Depreciation</td>
+                                        <td className="py-2 text-sm text-gray-900 text-right">{formatCurrency(metrics.costSegregation.totalDepreciation)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

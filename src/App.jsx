@@ -12,7 +12,9 @@ import AuthPage from './components/AuthPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DEFAULT_PROPERTY, DEFAULT_FINANCING, DEFAULT_OPERATIONS, DEFAULT_TAX_MARKET, DEFAULT_CLOSING_COSTS } from './utils/constants';
 import { generateForecast } from './utils/financials';
+import { mergeScenarioData } from './utils/scenarioHelpers';
 import * as dataService from './services/dataService';
+import { useToast } from './components/Toast';
 import { Save, FolderOpen, BarChart2, LayoutDashboard, TrendingUp, FileText, Table, DollarSign, Edit3, Check, X, Database, Upload, Download, LogOut } from 'lucide-react';
 import ConfirmModal from './components/ConfirmModal';
 
@@ -20,6 +22,7 @@ import ConfirmModal from './components/ConfirmModal';
 function AppContent() {
   // Auth hook - must be first
   const { isAuthenticated, loading, user, signOut, environment } = useAuth();
+  const toast = useToast();
   
   // All state hooks - must be called unconditionally (React rules of hooks)
   const [property, setProperty] = useState(DEFAULT_PROPERTY);
@@ -97,22 +100,22 @@ function AppContent() {
           property: { address: property.address, city: property.city, state: property.state },
           data: { property, financing, operations, taxMarket, closingCosts }
         });
-        console.log("Updated in database, ID:", currentDbId);
+        toast.success('Scenario saved to library');
         return;
       }
 
       // 2. If loaded from file (Electron only), save to that file
       if (currentScenarioPath && dataService.getEnvironment() === 'electron') {
         await dataService.saveToPath(currentScenarioPath, data);
-        console.log("Saved to file:", currentScenarioPath);
-      return;
-    }
+        toast.success('Scenario saved to file');
+        return;
+      }
 
       // 3. Otherwise, open the scenario manager to save to database
       setShowScenarioManager(true);
     } catch (err) {
       console.error("Failed to save:", err);
-      alert("Failed to save changes.");
+      toast.error('Failed to save changes');
     }
   };
 
@@ -150,64 +153,65 @@ function AppContent() {
 
   // Load scenario from database
   const handleLoadFromDatabase = (scenario) => {
-    const data = scenario.data;
-    
-    if (data.property) setProperty({ ...DEFAULT_PROPERTY, ...data.property });
-    if (data.financing) setFinancing({ ...DEFAULT_FINANCING, ...data.financing });
-    if (data.operations) setOperations({ 
-      ...DEFAULT_OPERATIONS, 
-      ...data.operations,
-      commercialExpenses: {
-        ...DEFAULT_OPERATIONS.commercialExpenses,
-        ...(data.operations?.commercialExpenses || {})
-      }
-    });
-    if (data.taxMarket) setTaxMarket({ ...DEFAULT_TAX_MARKET, ...data.taxMarket });
-    if (data.closingCosts) setClosingCosts({ ...DEFAULT_CLOSING_COSTS, ...data.closingCosts });
-    
+    const merged = mergeScenarioData(scenario.data);
+
+    setProperty(merged.property);
+    setFinancing(merged.financing);
+    setOperations(merged.operations);
+    setTaxMarket(merged.taxMarket);
+    setClosingCosts(merged.closingCosts);
+
     setScenarioName(scenario.name || 'Untitled Analysis');
     setCurrentDbId(scenario.id);
-    setCurrentScenarioPath(null); // Clear file path when loading from DB
+    setCurrentScenarioPath(null);
     setActiveTab('analysis');
+    toast.success(`Loaded "${scenario.name}"`);
   };
 
   // Handle save callback from ScenarioManager
   const handleSaveToDatabase = (savedScenario) => {
     setCurrentDbId(savedScenario.id);
     setScenarioName(savedScenario.name);
+    toast.success(`Saved "${savedScenario.name}" to library`);
   };
 
   const handleExport = async () => {
-    const data = { scenarioName, property, financing, operations, taxMarket, closingCosts };
-    const filePath = await dataService.exportToFile(data, scenarioName);
+    try {
+      const data = { scenarioName, property, financing, operations, taxMarket, closingCosts };
+      const filePath = await dataService.exportToFile(data, scenarioName);
       if (filePath) {
         setCurrentScenarioPath(filePath);
+        toast.success('Scenario exported');
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export scenario');
     }
   };
 
   const handleImport = async () => {
-    const result = await dataService.importFromFile();
+    try {
+      const result = await dataService.importFromFile();
       if (result) {
         const scenarioData = result.data || result;
         const filePath = result.filePath || null;
+        const merged = mergeScenarioData(scenarioData);
 
-      if (scenarioData.property) setProperty({ ...DEFAULT_PROPERTY, ...scenarioData.property });
-      if (scenarioData.financing) setFinancing({ ...DEFAULT_FINANCING, ...scenarioData.financing });
-      if (scenarioData.operations) setOperations({ 
-        ...DEFAULT_OPERATIONS, 
-        ...scenarioData.operations,
-        commercialExpenses: {
-          ...DEFAULT_OPERATIONS.commercialExpenses,
-          ...(scenarioData.operations?.commercialExpenses || {})
-        }
-      });
-      if (scenarioData.taxMarket) setTaxMarket({ ...DEFAULT_TAX_MARKET, ...scenarioData.taxMarket });
-      if (scenarioData.closingCosts) setClosingCosts({ ...DEFAULT_CLOSING_COSTS, ...scenarioData.closingCosts });
+        setProperty(merged.property);
+        setFinancing(merged.financing);
+        setOperations(merged.operations);
+        setTaxMarket(merged.taxMarket);
+        setClosingCosts(merged.closingCosts);
+        setScenarioName(merged.scenarioName);
 
-      setScenarioName(scenarioData.scenarioName || 'Untitled Analysis');
         setActiveTab('analysis');
         setCurrentScenarioPath(filePath);
-      setCurrentDbId(null); // Clear DB ID when importing from file
+        setCurrentDbId(null);
+        toast.success('Scenario imported');
+      }
+    } catch (err) {
+      console.error('Import failed:', err);
+      toast.error('Failed to import scenario');
     }
   };
 

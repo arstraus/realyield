@@ -49,8 +49,16 @@ export const VALIDATION_RULES = {
 export const validateField = (value, rules) => {
     const errors = [];
 
-    if (rules.required && (value === null || value === undefined || value === '')) {
+    // Check if value is empty/missing
+    const isEmpty = value === null || value === undefined || value === '';
+
+    if (rules.required && isEmpty) {
         errors.push('This field is required');
+        return errors;
+    }
+
+    // If optional and empty, skip validation
+    if (!rules.required && isEmpty) {
         return errors;
     }
 
