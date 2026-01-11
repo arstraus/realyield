@@ -139,6 +139,30 @@ describe('calculateClosingCosts', () => {
         const costs = calculateClosingCosts(100000, {});
         expect(costs).toBe(0);
     });
+
+    it('excludes lender fees for all-cash purchases', () => {
+        const costs = calculateClosingCosts(500000, {
+            titleInsurancePercent: 0.5,
+            escrowFeesPercent: 1.0,
+            lenderFeesPercent: 1.0,
+            recordingFeesPercent: 0.5,
+            inspectionAppraisalFixed: 2000,
+        }, true); // isAllCash = true
+        // (0.5 + 1.0 + 0 + 0.5) = 2% of 500000 = 10000 + 2000 = 12000
+        expect(costs).toBe(12000);
+    });
+
+    it('includes lender fees for financed purchases', () => {
+        const costs = calculateClosingCosts(500000, {
+            titleInsurancePercent: 0.5,
+            escrowFeesPercent: 1.0,
+            lenderFeesPercent: 1.0,
+            recordingFeesPercent: 0.5,
+            inspectionAppraisalFixed: 2000,
+        }, false); // isAllCash = false
+        // (0.5 + 1.0 + 1.0 + 0.5) = 3% of 500000 = 15000 + 2000 = 17000
+        expect(costs).toBe(17000);
+    });
 });
 
 describe('generateAmortizationSchedule', () => {

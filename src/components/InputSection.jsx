@@ -216,7 +216,7 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                         <div className="flex items-center space-x-3">
                             <span className="text-sm font-medium text-indigo-600">
                                 Total: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
-                                    (closingCosts.titleInsurancePercent + closingCosts.escrowFeesPercent + closingCosts.lenderFeesPercent + closingCosts.recordingFeesPercent) / 100 * property.purchasePrice + closingCosts.inspectionAppraisalFixed
+                                    (closingCosts.titleInsurancePercent + closingCosts.escrowFeesPercent + (financing.downPaymentPercent === 100 ? 0 : closingCosts.lenderFeesPercent) + closingCosts.recordingFeesPercent) / 100 * property.purchasePrice + closingCosts.inspectionAppraisalFixed
                                 )}
                             </span>
                             <span className="text-gray-400">{showClosingCostsDetail ? '▼' : '▶'}</span>
@@ -239,13 +239,15 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                             suffix="%"
                             error={getError('closingCosts', 'escrowFeesPercent')}
                         />
-                        <InputField
-                            label="Lender Fees"
-                            value={closingCosts.lenderFeesPercent}
-                            onChange={(v) => setClosingCosts({ ...closingCosts, lenderFeesPercent: v })}
-                            suffix="%"
-                            error={getError('closingCosts', 'lenderFeesPercent')}
-                        />
+                        {financing.downPaymentPercent !== 100 && (
+                            <InputField
+                                label="Lender Fees"
+                                value={closingCosts.lenderFeesPercent}
+                                onChange={(v) => setClosingCosts({ ...closingCosts, lenderFeesPercent: v })}
+                                suffix="%"
+                                error={getError('closingCosts', 'lenderFeesPercent')}
+                            />
+                        )}
                         <InputField
                             label="Recording Fees"
                             value={closingCosts.recordingFeesPercent}
@@ -264,29 +266,58 @@ const InputSection = ({ property, setProperty, financing, setFinancing, operatio
                 )}
             </div>
 
-            <InputGroup title="Financing Structure">
-                <InputField
-                    label="Down Payment"
-                    value={financing.downPaymentPercent}
-                    onChange={(v) => setFinancing({ ...financing, downPaymentPercent: v })}
-                    suffix="%"
-                    error={getError('financing', 'downPaymentPercent')}
-                />
-                <InputField
-                    label="Interest Rate"
-                    value={financing.interestRate}
-                    onChange={(v) => setFinancing({ ...financing, interestRate: v })}
-                    suffix="%"
-                    error={getError('financing', 'interestRate')}
-                />
-                <InputField
-                    label="Loan Term"
-                    value={financing.loanTermYears}
-                    onChange={(v) => setFinancing({ ...financing, loanTermYears: v })}
-                    suffix="Years"
-                    error={getError('financing', 'loanTermYears')}
-                />
-            </InputGroup>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold text-gray-900">Financing Structure</h3>
+                        <button
+                            onClick={() => setFinancing({
+                                ...financing,
+                                downPaymentPercent: financing.downPaymentPercent === 100 ? 25 : 100
+                            })}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                                financing.downPaymentPercent === 100
+                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            {financing.downPaymentPercent === 100 ? 'All Cash' : 'Switch to All Cash'}
+                        </button>
+                    </div>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {financing.downPaymentPercent === 100 ? (
+                        <div className="md:col-span-2 text-center py-4">
+                            <p className="text-gray-600">All cash purchase - no financing</p>
+                            <p className="text-sm text-gray-500 mt-1">Click the button above to add financing</p>
+                        </div>
+                    ) : (
+                        <>
+                            <InputField
+                                label="Down Payment"
+                                value={financing.downPaymentPercent}
+                                onChange={(v) => setFinancing({ ...financing, downPaymentPercent: v })}
+                                suffix="%"
+                                error={getError('financing', 'downPaymentPercent')}
+                            />
+                            <InputField
+                                label="Interest Rate"
+                                value={financing.interestRate}
+                                onChange={(v) => setFinancing({ ...financing, interestRate: v })}
+                                suffix="%"
+                                error={getError('financing', 'interestRate')}
+                            />
+                            <InputField
+                                label="Loan Term"
+                                value={financing.loanTermYears}
+                                onChange={(v) => setFinancing({ ...financing, loanTermYears: v })}
+                                suffix="Years"
+                                error={getError('financing', 'loanTermYears')}
+                            />
+                        </>
+                    )}
+                </div>
+            </div>
 
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                 <div className="flex justify-between items-center mb-4">

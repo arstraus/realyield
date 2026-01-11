@@ -150,12 +150,15 @@ export const calculateSensitivityMatrix = (baseInputs, xVariable, xRange, yVaria
 
 /**
  * Calculates total closing costs from detailed breakdown
+ * @param {number} purchasePrice - The purchase price of the property
+ * @param {Object} closingCosts - Closing costs breakdown
+ * @param {boolean} isAllCash - Whether this is an all-cash purchase (no lender fees)
  */
-export const calculateClosingCosts = (purchasePrice, closingCosts) => {
+export const calculateClosingCosts = (purchasePrice, closingCosts, isAllCash = false) => {
     const percentageCosts = (
         (closingCosts.titleInsurancePercent || 0) +
         (closingCosts.escrowFeesPercent || 0) +
-        (closingCosts.lenderFeesPercent || 0) +
+        (isAllCash ? 0 : (closingCosts.lenderFeesPercent || 0)) +
         (closingCosts.recordingFeesPercent || 0)
     ) / 100 * purchasePrice;
 
@@ -205,7 +208,8 @@ export const generateForecast = (property, financing, operations, taxMarket, clo
     // Initial Investment
     const loanAmount = property.purchasePrice * (1 - financing.downPaymentPercent / 100);
     const downPayment = property.purchasePrice * (financing.downPaymentPercent / 100);
-    const closingCostsValue = calculateClosingCosts(property.purchasePrice, closingCosts);
+    const isAllCash = financing.downPaymentPercent === 100;
+    const closingCostsValue = calculateClosingCosts(property.purchasePrice, closingCosts, isAllCash);
 
     const totalInitialInvestment = downPayment + closingCostsValue + property.rehabCosts + (operations.initialCapEx || 0);
 
@@ -457,7 +461,7 @@ export const generateForecast = (property, financing, operations, taxMarket, clo
             closingCostsBreakdown: {
                 titleInsurance: (closingCosts.titleInsurancePercent / 100) * property.purchasePrice,
                 escrowFees: (closingCosts.escrowFeesPercent / 100) * property.purchasePrice,
-                lenderFees: (closingCosts.lenderFeesPercent / 100) * property.purchasePrice,
+                lenderFees: isAllCash ? 0 : (closingCosts.lenderFeesPercent / 100) * property.purchasePrice,
                 recordingFees: (closingCosts.recordingFeesPercent / 100) * property.purchasePrice,
                 inspectionAppraisal: closingCosts.inspectionAppraisalFixed,
                 total: closingCostsValue
