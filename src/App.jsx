@@ -15,7 +15,7 @@ import { generateForecast } from './utils/financials';
 import { mergeScenarioData } from './utils/scenarioHelpers';
 import * as dataService from './services/dataService';
 import { useToast } from './components/Toast';
-import { Save, FolderOpen, BarChart2, LayoutDashboard, TrendingUp, FileText, Table, DollarSign, Edit3, Check, X, Database, Upload, Download, LogOut } from 'lucide-react';
+import { Save, FolderOpen, BarChart2, LayoutDashboard, TrendingUp, FileText, Table, DollarSign, Edit3, Check, X, Database, LogOut } from 'lucide-react';
 import ConfirmModal from './components/ConfirmModal';
 
 
@@ -31,7 +31,6 @@ function AppContent() {
   const [taxMarket, setTaxMarket] = useState(DEFAULT_TAX_MARKET);
   const [closingCosts, setClosingCosts] = useState(DEFAULT_CLOSING_COSTS);
   const [activeTab, setActiveTab] = useState('inputs');
-  const [currentScenarioPath, setCurrentScenarioPath] = useState(null);
   const [currentDbId, setCurrentDbId] = useState(null);
   const [scenarioName, setScenarioName] = useState('Untitled Analysis');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -90,10 +89,8 @@ function AppContent() {
   };
 
   const handleQuickSave = async () => {
-    const data = { scenarioName, property, financing, operations, taxMarket, closingCosts };
-
     try {
-      // 1. If loaded from database, update in database
+      // If loaded from database, update in database
       if (currentDbId) {
         await dataService.updateScenario(currentDbId, {
           name: scenarioName,
@@ -104,14 +101,7 @@ function AppContent() {
         return;
       }
 
-      // 2. If loaded from file (Electron only), save to that file
-      if (currentScenarioPath && dataService.getEnvironment() === 'electron') {
-        await dataService.saveToPath(currentScenarioPath, data);
-        toast.success('Scenario saved to file');
-        return;
-      }
-
-      // 3. Otherwise, open the scenario manager to save to database
+      // Otherwise, open the scenario manager to save to database
       setShowScenarioManager(true);
     } catch (err) {
       console.error("Failed to save:", err);
@@ -119,7 +109,7 @@ function AppContent() {
     }
   };
 
-  const loadScenarioFromCompare = (data, filePath, name) => {
+  const loadScenarioFromCompare = (data, name) => {
     if (data) {
       if (data.property) setProperty(data.property);
       if (data.financing) setFinancing(data.financing);
@@ -127,7 +117,6 @@ function AppContent() {
       if (data.taxMarket) setTaxMarket(data.taxMarket);
       if (data.closingCosts) setClosingCosts(data.closingCosts);
 
-      setCurrentScenarioPath(filePath);
       setScenarioName(data.scenarioName || name || 'Untitled Analysis');
       setActiveTab('analysis');
     }
@@ -147,7 +136,6 @@ function AppContent() {
     setShowNewAnalysisModal(false);
 
     setScenarioName('Untitled Analysis');
-    setCurrentScenarioPath(null);
     setCurrentDbId(null);
   };
 
@@ -163,7 +151,6 @@ function AppContent() {
 
     setScenarioName(scenario.name || 'Untitled Analysis');
     setCurrentDbId(scenario.id);
-    setCurrentScenarioPath(null);
     setActiveTab('analysis');
     toast.success(`Loaded "${scenario.name}"`);
   };
@@ -173,46 +160,6 @@ function AppContent() {
     setCurrentDbId(savedScenario.id);
     setScenarioName(savedScenario.name);
     toast.success(`Saved "${savedScenario.name}" to library`);
-  };
-
-  const handleExport = async () => {
-    try {
-      const data = { scenarioName, property, financing, operations, taxMarket, closingCosts };
-      const filePath = await dataService.exportToFile(data, scenarioName);
-      if (filePath) {
-        setCurrentScenarioPath(filePath);
-        toast.success('Scenario exported');
-      }
-    } catch (err) {
-      console.error('Export failed:', err);
-      toast.error('Failed to export scenario');
-    }
-  };
-
-  const handleImport = async () => {
-    try {
-      const result = await dataService.importFromFile();
-      if (result) {
-        const scenarioData = result.data || result;
-        const filePath = result.filePath || null;
-        const merged = mergeScenarioData(scenarioData);
-
-        setProperty(merged.property);
-        setFinancing(merged.financing);
-        setOperations(merged.operations);
-        setTaxMarket(merged.taxMarket);
-        setClosingCosts(merged.closingCosts);
-        setScenarioName(merged.scenarioName);
-
-        setActiveTab('analysis');
-        setCurrentScenarioPath(filePath);
-        setCurrentDbId(null);
-        toast.success('Scenario imported');
-      }
-    } catch (err) {
-      console.error('Import failed:', err);
-      toast.error('Failed to import scenario');
-    }
   };
 
   // Scenario Name Editor Component
@@ -262,17 +209,17 @@ function AppContent() {
     <div className="flex space-x-2 items-center">
       <ScenarioNameEditor />
       <div className="w-px bg-slate-200 mx-2 h-6"></div>
-      
-      {/* Save Button - smart save to DB or file */}
+
+      {/* Save Button - save to database */}
       <button
         onClick={handleQuickSave}
         className="flex items-center px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors shadow-sm"
-        title={currentDbId ? "Save to database" : currentScenarioPath ? "Save to file" : "Save to library"}
+        title={currentDbId ? "Save to database" : "Save to library"}
       >
         <Save size={18} className="mr-2" />
         Save
       </button>
-      
+
       {/* Library - browse and manage saved scenarios */}
       <button
         onClick={() => setShowScenarioManager(true)}
@@ -282,25 +229,7 @@ function AppContent() {
         <Database size={18} className="mr-2" />
         Library
       </button>
-      
-      <div className="w-px bg-slate-200 mx-1 h-6"></div>
-      
-      {/* File import/export */}
-      <button
-        onClick={handleImport}
-        className="flex items-center px-2 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
-        title="Import from JSON file"
-      >
-        <Upload size={18} />
-      </button>
-      <button
-        onClick={handleExport}
-        className="flex items-center px-2 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
-        title="Export to JSON file"
-      >
-        <Download size={18} />
-      </button>
-      
+
       {/* User menu (web only) */}
       {environment === 'web' && user && (
         <>

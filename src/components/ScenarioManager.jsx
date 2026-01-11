@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Database, Search, Star, StarOff, Trash2, Copy, Download, 
+import {
+    Database, Search, Star, StarOff, Trash2, Copy,
     Clock, FolderOpen, Plus, X, ChevronRight, Building2
 } from 'lucide-react';
 import { generateForecast } from '../utils/financials';
@@ -124,16 +124,6 @@ const ScenarioManager = ({
             loadScenarios();
         } catch (error) {
             console.error('Error duplicating scenario:', error);
-        }
-    };
-
-    const handleExport = async (scenario, e) => {
-        e.stopPropagation();
-        
-        try {
-            await dataService.exportToFile(scenario.data, scenario.name);
-        } catch (error) {
-            console.error('Error exporting scenario:', error);
         }
     };
 
@@ -398,13 +388,6 @@ const ScenarioManager = ({
                                                     <Copy size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={(e) => handleExport(scenario, e)}
-                                                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                                                    title="Export to file"
-                                                >
-                                                    <Download size={16} />
-                                                </button>
-                                                <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setDeleteConfirm(scenario.id);
@@ -428,7 +411,7 @@ const ScenarioManager = ({
                 {/* Footer hint */}
                 <div className="px-6 py-3 border-t border-slate-200 bg-slate-50">
                     <p className="text-xs text-slate-500 text-center">
-                        Click a scenario to load it • Use File → Open to import from external JSON files
+                        Click a scenario to load it
                     </p>
                 </div>
             </div>
